@@ -1,0 +1,21 @@
+{
+  "name": "wpcl-hd-reader",
+  "version": "0.1.0",
+  "description": "WPCL HD Disk reader",
+  "main": "reader.js",
+  "dependencies": {
+    "async": "^2.4.1",
+    "mongoose": "^4.11.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wpmg/wpcl_hd_reader.git"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm-run-all --parallel"
+  },
+  "author": "WP",
+  "license": "ISC"
+}
