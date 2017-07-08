@@ -11,11 +11,25 @@
     "type": "git",
     "url": "git+https://github.com/wpmg/wpcl_hd_reader.git"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^4.1.1"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node reader.js"
   },
   "author": "WP",
-  "license": "ISC"
+  "eslintConfig": {
+    "extends": "eslint:recommended",
+    "env": {
+      "node": true,
+      "es6": true
+    },
+    "rules": {
+      "quotes": [2, "single"],
+      "indent": [1, 2],
+      "no-console": 0,
+      "no-unused-vars": 1
+    }
+  }
 }

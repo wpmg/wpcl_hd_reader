@@ -1,9 +1,10 @@
-// import {exec} from 'child-process';
-var exec = require('child_process').exec;
 var async = require('async');
 
 var mongoose = require('./db')(true);
 var Disk_Model = require('./disk_model');
+
+var RunSections = require('./RunSections');
+
 
 var script_start_time = (new Date()).getTime();
 
@@ -22,11 +23,6 @@ const SaveData = (err, results) => {
     console.log('Abort saving.');
     return false;
   }
-  //var a = new Disk_Model({'Device Model' : 'hej'});
-  //console.log(a);
-  //a.save();
-  //new Disk_Model({'Device Model' : 'hej'}).save();
-  // console.log(disk_to_save);
 
   Disk_Model.findOne(
     {
@@ -41,15 +37,15 @@ const SaveData = (err, results) => {
         return false;
       }
 
-      disk_to_save = results[0].data;
+      var disk_to_save = results[0];
       disk_to_save.attr_section = results[1];
 
       if (disk === null) {
         console.log('diskrnull');
-        
+
         var new_disk = new Disk_Model(disk_to_save);
 
-        
+
         new_disk.save((err) => {
           if (err) {
             console.log('Err: ', err);
@@ -60,7 +56,7 @@ const SaveData = (err, results) => {
           mongoose.close();
           console.log('Script runtime: ', (new Date()).getTime() - script_start_time);
         });
-        
+
 
       } else {
         if (disk.updated >= disk_to_save.updated) {
@@ -103,24 +99,15 @@ const SaveData = (err, results) => {
       //mongoose.close();
     }
   );
-} 
-
+}
 
 var disk_no = 2;
 var current_time = (new Date()).getTime();
 
 async.parallel(
   [
-    (callback) => {RunInfoSection(callback, disk_no, current_time);},
-    (callback) => {RunAttrSection(callback, disk_no, current_time);}
+    (callback) => {RunSections.Info(callback, disks[disk_no], current_time);},
+    (callback) => {RunSections.Attr(callback, disks[disk_no], current_time);}
   ],
   SaveData
 );
-
-// exec('smartctl -A ' + disks[2]);
-
-/*
-for (let i = 0; i < no_disks; i++) {
-
-}
-*/
