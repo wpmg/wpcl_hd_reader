@@ -125,7 +125,7 @@ const SaveData = (err, results) => {
       'Device Model': results[0].data['Device Model'],
       'Serial Number': results[0].data['Serial Number']
     },
-    (err, disk) => {
+    (err, disk) => {console.log('hej');
       if (err) {
         console.log('err');
         return false;
