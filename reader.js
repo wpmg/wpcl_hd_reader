@@ -1,9 +1,11 @@
 // import {exec} from 'child-process';
 var exec = require('child_process').exec;
-var async = require('async').parallel;
+var async = require('async');
 
 var mongoose = require('./db')(true);
 var Disk_Model = require('./disk_model');
+
+var script_start_time = (new Date()).getTime();
 
 const disks = [
   '/dev/sda1',
@@ -13,101 +15,7 @@ const disks = [
 
 const no_disks = disks.length;
 
-const RunInfoSection = (callback, disk_no, current_time) => {
-  exec('smartctl -i ' + disks[disk_no], (error, stdout, stderr) => {
-    const out_arr = stdout.split('\n');
-    const no_out_arr = out_arr.length;
 
-    let found_info_sec = false;
-    let disk_data = {
-      'Device Model': '',
-      'Serial Number': '',
-      'info_section': []
-    };
-
-    for (let i = 0; i < no_out_arr; i++) {
-      if (out_arr[i] === '=== START OF INFORMATION SECTION ===') {
-        found_info_sec = true;
-        continue;
-      }
-
-      if (found_info_sec === true) {
-        if (out_arr[i] === '') {
-          break;
-        }
-
-        let info_row = out_arr[i].match(/\s*([^:]+):\s*(.+)\s*/);
-
-        if (info_row === null) {
-          continue;
-        }
-
-        if (info_row[1] === 'Device Model' || info_row[1] === 'Serial Number') {
-          disk_data[info_row[1]] = info_row[2];
-        } else {
-          disk_data.info_section.push({
-            'name': info_row[1],
-            'value': info_row[2]
-          });
-        }
-      }
-    }
-
-    delete disk_data.info_section['Local Time is'];
-    delete disk_data.info_section['SMART support is'];
-
-    callback(null, {
-      data: disk_data,
-      update_time: current_time
-    });
-  });
-};
-
-const RunAttrSection = (callback, disk_no, current_time) => {
-  exec('smartctl -A ' + disks[disk_no], (error, stdout, stderr) => {
-    const out_arr = stdout.split('\n');
-    const no_out_arr = out_arr.length;
-
-    let found_attr_sec = false;
-    let disk_data = [];
-
-    for (let i = 0; i < no_out_arr; i++) {
-      if (out_arr[i] === '=== START OF READ SMART DATA SECTION ===') {
-        found_attr_sec = true;
-        i += 2;
-        continue;
-      }
-
-      if (found_attr_sec === true) {
-        if (out_arr[i] === '') {
-          break;
-        }
-
-        let attr_row = out_arr[i].match(/\s*([0-9]+)\s*([A-Za-z0-9_-]+)\s*0x[0-9A-Fa-f]{4}\s*([0-9]{3})\s*[0-9]{3}\s*([0-9]{3})\s*(Pre-fail|Old_age)\s*(Always|Offline)\s*([A-Za-z0-9_-]*)\s*(.*)\s*/);
-
-        if (attr_row === null) {
-          continue;
-        }
-
-        disk_data.push({
-          attr_id: attr_row[1],
-          name: attr_row[2],
-          thresh: parseInt(attr_row[4]),
-          attr_type: attr_row[5],
-          updated: attr_row[6],
-          values: [{
-            time: current_time,
-            value: parseInt(attr_row[3]),
-            failed: attr_row[7],
-            raw: attr_row[8]
-          }]
-        });
-      }
-    }
-
-    callback(null, disk_data);
-  });
-};
 
 const SaveData = (err, results) => {
   if (err !== null) {
@@ -125,43 +33,83 @@ const SaveData = (err, results) => {
       'Device Model': results[0].data['Device Model'],
       'Serial Number': results[0].data['Serial Number']
     },
-    (err, disk) => {console.log('hej');
+    '_id updated',
+    (err, disk) => {
       if (err) {
-        console.log('err');
+        console.log('Err: ', err);
+        mongoose.close();
         return false;
       }
 
+      disk_to_save = results[0].data;
+      disk_to_save.attr_section = results[1];
+
       if (disk === null) {
         console.log('diskrnull');
-        disk_to_save = results[0].data;
-        disk_to_save.attr_section = results[1];
         
         var new_disk = new Disk_Model(disk_to_save);
+
         
         new_disk.save((err) => {
+          if (err) {
+            console.log('Err: ', err);
+            mongoose.close();
+            return false;
+          }
 
           mongoose.close();
+          console.log('Script runtime: ', (new Date()).getTime() - script_start_time);
         });
-        //(new Disk_Model(disk_to_save)).save();
-
-        //Disk_Model.create(disk_to_save, (errr, doc) => {console.log(errr, ':::', doc)});
+        
 
       } else {
-        
-        mongoose.close();
+        if (disk.updated >= disk_to_save.updated) {
+          console.log('Err: ', 'More recent update found.');
+          mongoose.close();
+          return false;
+        }
+
+        async.some(
+          disk_to_save.attr_section,
+          (this_attr, attr_callback) => {
+            Disk_Model.findById(disk._id).update(
+              {'attr_section.attr_id': this_attr.attr_id},
+              {
+                '$push': {'attr_section.$.values': this_attr.values[0]},
+                'attr_section.$.failed': this_attr.failed
+              }
+            ).exec((err, res) => { attr_callback(null, !err) });
+          },
+          (attr_err, attr_res) => {
+            Disk_Model.findById(disk._id).update({}, {'updated': disk_to_save.updated})
+              .exec((err, res) => {
+                if (err) {
+                  console.log('Err: ', 'Couldn\'t update time.');
+                  mongoose.close();
+                  return false;
+                }
+
+                mongoose.close();
+
+                console.log('Script runtime: ', (new Date()).getTime() - script_start_time);
+
+                return true;
+              });
+          }
+        );
+        // mongoose.close();
       }
 
       //mongoose.close();
     }
   );
-  console.log('hej');
 } 
 
 
 var disk_no = 2;
-var current_time = (new Date).getTime();
+var current_time = (new Date()).getTime();
 
-async(
+async.parallel(
   [
     (callback) => {RunInfoSection(callback, disk_no, current_time);},
     (callback) => {RunAttrSection(callback, disk_no, current_time);}
