@@ -78,7 +78,7 @@ async(
 
     winston.info(
       'SCRIPT INFO: ' + disk_count[0] + 'S ' + disk_count[1] + 'F (' + disks.length + 'T). '
-      + 'Script took ' + ((new Date()).getTime() - script_start_time) + ' ms.'
+      + 'Runtime ' + ((new Date()).getTime() - script_start_time) + ' ms.'
     );
   }
 );
