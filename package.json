@@ -5,8 +5,10 @@
   "main": "reader.js",
   "dependencies": {
     "async": "^2.5.0",
-    "mongoose": "^4.11.1"
+    "mongoose": "^4.11.1",
+    "winston": "^2.3.1"
   },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wpmg/wpcl_hd_reader.git"
@@ -18,7 +20,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node reader.js"
   },
-  "author": "WP",
+  "author": "Wilmer Prentius",
   "eslintConfig": {
     "extends": "eslint:recommended",
     "env": {
@@ -26,8 +28,14 @@
       "es6": true
     },
     "rules": {
-      "quotes": [2, "single"],
-      "indent": [1, 2],
+      "quotes": [
+        2,
+        "single"
+      ],
+      "indent": [
+        1,
+        2
+      ],
       "no-console": 0,
       "no-unused-vars": 1
     }

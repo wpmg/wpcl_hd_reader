@@ -2,7 +2,13 @@ var exec = require('child_process').exec;
 
 module.exports.Info = (callback, disk, current_time) => {
   // Run smartctl for a disk
-  exec('smartctl -i ' + disk, (error, stdout, stderr) => {
+  exec('smartctl -i ' + disk, (error, stdout) => {
+    // If error, report down the chain.
+    if (error) {
+      callback(null, [false, disk + ': Reading stopped. smartctl -i could not execute: ' + error]);
+      return false;
+    }
+
     // Split output on newline
     const out_arr = stdout.split('\n');
     const no_out_arr = out_arr.length;
@@ -62,13 +68,19 @@ module.exports.Info = (callback, disk, current_time) => {
     }
 
     // Send data back to async.parallel
-    callback(null, disk_data);
+    callback(null, [true, disk_data]);
   });
 };
 
 module.exports.Attr = (callback, disk, current_time) => {
   // Run smartctl for a disk
-  exec('smartctl -A ' + disk, (error, stdout, stderr) => {
+  exec('smartctl -A ' + disk, (error, stdout) => {
+    // If error, report down the chain
+    if (error) {
+      callback(null, [false, disk + ': Reading stopped. smartctl -A could not execute: ' + error]);
+      return false;
+    }
+
     // Split output on newline
     const out_arr = stdout.split('\n');
     const no_out_arr = out_arr.length;
@@ -122,6 +134,6 @@ module.exports.Attr = (callback, disk, current_time) => {
     }
 
     // Send data back to async.parallel
-    callback(null, disk_data);
+    callback(null, [true, disk_data]);
   });
 };
