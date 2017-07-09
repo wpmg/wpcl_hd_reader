@@ -18,7 +18,10 @@ module.exports.Info = (callback, disk, current_time) => {
       'Device Model': '',
       'Serial Number': '',
       'info_section': [],
-      'updated': current_time
+      'location': 'Umea',
+      'internal_name': disk,
+      'updated': current_time,
+      'added': current_time
     };
 
     // Loop through each line in the output

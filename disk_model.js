@@ -27,7 +27,10 @@ const info_schema = new Schema({
 const disk_schema = new Schema({
   'Device Model': String,
   'Serial Number': String,
+  'added': Number,
   'updated': Number,
+  'location': String,
+  'internal_name': String,
   info_section: [info_schema],
   attr_section: [attr_schema]
 });
@@ -39,10 +42,3 @@ const disk_model = mongoose.model(
 );
 
 module.exports = disk_model;
-
-/*
-
-Behöver få scheman att matcha med resultaten från hur data sparas.
-
-*/
-

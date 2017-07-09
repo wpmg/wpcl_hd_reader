@@ -79,7 +79,14 @@ module.exports = (results, sdtdb_callback) => {
             }
 
             // Update update-time for disk
-            Disk_Model.findById(disk._id).update({}, {'updated': disk_to_save.updated})
+            Disk_Model.findById(disk._id).update(
+              {},
+              {
+                'updated': disk_to_save.updated,
+                'location': disk_to_save.phys_loc,
+                'internal_name': disk_to_save.internal_name
+              }
+            )
               .exec((err) => {
                 // If mongoose couldn't execute
                 if (err) {
