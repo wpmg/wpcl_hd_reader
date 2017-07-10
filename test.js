@@ -11,23 +11,23 @@ NAME     MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
 */
 
 
-var exec = require('child_process').exec;
+const exec = require('child_process').exec;
 
-exec('sudo lsblk -l -d -p', (err, res) => {
-  res = res.split('\n');
+exec('sudo lsblk -l -d -p', (err, diskRes) => {
+  const res = diskRes.split('\n');
 
-  var res_length = res.length;
-  var disks = [];
+  const resLength = res.length;
+  const disks = [];
 
-  for (let i = 1; i < res_length; i++) {
+  for (let i = 1; i < resLength; i++) {
     if (res[i] === '') {
       continue;
     }
 
-    let res_row = res[i].match(/\s*(\S*)\s+\d*:\d*\s*\d*\s*[\w.,]*\s*\d*\s*(\w*)\s+.*/);
+    const resRow = res[i].match(/\s*(\S*)\s+\d*:\d*\s*\d*\s*[\w.,]*\s*\d*\s*(\w*)\s+.*/);
 
-    if (res_row[2] === 'disk') {
-      disks.push(res_row[1]);
+    if (resRow[2] === 'disk') {
+      disks.push(resRow[1]);
     }
   }
   console.log(disks);

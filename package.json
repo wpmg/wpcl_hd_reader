@@ -14,37 +14,13 @@
     "url": "git+https://github.com/wpmg/wpcl_hd_reader.git"
   },
   "devDependencies": {
-    "eslint": "^4.1.1"
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb-base": "^11.2.0",
+    "eslint-plugin-import": "^2.7.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node reader.js"
   },
-  "author": "Wilmer Prentius",
-  "eslintConfig": {
-    "extends": "eslint:recommended",
-    "env": {
-      "node": true,
-      "es6": true
-    },
-    "parserOptions": {
-      "ecmaVersion": 6,
-      "sourceType": "module",
-      "ecmaFeatures": {
-        "jsx": true
-      }
-    },
-    "rules": {
-      "quotes": [
-        2,
-        "single"
-      ],
-      "indent": [
-        1,
-        2
-      ],
-      "no-console": 0,
-      "no-unused-vars": 1
-    }
-  }
+  "author": "Wilmer Prentius"
 }

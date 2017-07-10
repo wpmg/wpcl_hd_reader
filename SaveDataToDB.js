@@ -1,115 +1,111 @@
-var async = require('async').mapLimit;
-var Disk_Model = require('./disk_model');
+const async = require('async').mapLimit;
+const DiskModel = require('./disk_model');
 
-module.exports = (results, sdtdb_callback) => {
+module.exports = (results, sdtdbCallback) => {
   // Store data in correct format
-  var disk_to_save = results[0][1];
-  disk_to_save.attr_section = results[1][1];
+  const diskModelData = results[0][1];
+  diskModelData.attr_section = results[1][1];
 
   // Save disk name to variable for use in errors.
-  var disk_name = disk_to_save['Device Model'] + ' (' + disk_to_save['Serial Number'] + ')';
+  const diskName = `${diskModelData['Device Model']} (${diskModelData['Serial Number']})`;
 
   // Check if disk exists
-  Disk_Model.findOne(
+  DiskModel.findOne(
     {
-      'Device Model': disk_to_save['Device Model'],
-      'Serial Number': disk_to_save['Serial Number']
+      'Device Model': diskModelData['Device Model'],
+      'Serial Number': diskModelData['Serial Number'],
     },
     '_id updated',
     (err, disk) => {
       // If error occured
       if (err) {
-        sdtdb_callback(null, [false, disk_name + ': Could not execute mongooose query.']);
-        return false;
+        sdtdbCallback(null, [false, `${diskName}: Could not execute mongooose query.`]);
+        return;
       }
 
       // If disk does not exist, save disk as new
       if (disk === null) {
-        (new Disk_Model(disk_to_save))
-          .save((err) => {
+        (new DiskModel(diskModelData))
+          .save((saveErr) => {
             // If error occured on save
-            if (err) {
-              sdtdb_callback(null, [false, disk_name + ': New disk found but not saved.']);
-              return false;
+            if (saveErr) {
+              sdtdbCallback(null, [false, `${diskName}: New disk found but not saved.`]);
+              return;
             }
 
-            sdtdb_callback(null, [true, disk_name + ': New disk found and saved.']);
-            return true;
+            sdtdbCallback(null, [true, `${diskName}: New disk found and saved.`]);
           });
-
-
       } else {
         // If disk does exist, but has somehow been updated already
-        if (disk.updated >= disk_to_save.updated) {
-          sdtdb_callback(null, [false, disk_name + ': Disk has already been updated.']);
-          return false;
+        if (disk.updated >= diskModelData.updated) {
+          sdtdbCallback(null, [false, `${diskName}: Disk has already been updated.`]);
+          return;
         }
 
         // Update attributes asyncronically
         async(
-          disk_to_save.attr_section,
+          diskModelData.attr_section,
           5,
 
           // Function to map on
-          (this_attr, attr_callback) => {
+          (thisAttr, attrCallback) => {
             // Find disk and update.
-            Disk_Model.findById(disk._id).update(
-              {'attr_section.attr_id': this_attr.attr_id},
+            DiskModel.findById(disk._id).update(
+              { 'attr_section.attr_id': thisAttr.attr_id },
               {
-                '$push': {'attr_section.$.values': this_attr.values[0]},
-                'attr_section.$.failed': this_attr.failed
+                $push: { 'attr_section.$.values': thisAttr.values[0] },
+                'attr_section.$.failed': thisAttr.failed,
               }
-            ).exec((err) => {
-              if (err) {
-                attr_callback(null, [false, this_attr.attr_id]);
+            ).exec((execErr) => {
+              if (execErr) {
+                attrCallback(null, [false, thisAttr.attr_id]);
                 return false;
               }
 
-              attr_callback(null, [true, this_attr.attr_id]);
+              attrCallback(null, [true, thisAttr.attr_id]);
               return true;
             });
           },
 
           // Callback function
-          (attr_err, attr_res) => {
-            // If attr_err somehow got invoked
-            if (attr_err) {
-              sdtdb_callback(null, [false, disk_name + ': Something went wrong when saving the attributes.']);
-              return false;
+          (attrErr, attrRes) => {
+            // If attrErr somehow got invoked
+            if (attrErr) {
+              sdtdbCallback(null, [false, `${diskName}: Something went wrong when saving the attributes.`]);
+              return;
             }
 
             // Update update-time for disk
-            Disk_Model.findById(disk._id).update(
+            DiskModel.findById(disk._id).update(
               {},
               {
-                'updated': disk_to_save.updated,
-                'location': disk_to_save.phys_loc,
-                'internal_name': disk_to_save.internal_name
+                updated: diskModelData.updated,
+                location: diskModelData.phys_loc,
+                internal_name: diskModelData.internal_name,
               }
             )
-              .exec((err) => {
+              .exec((execErr) => {
                 // If mongoose couldn't execute
-                if (err) {
-                  sdtdb_callback(null, [false, disk_name + ': Could not execute mongooose query.']);
-                  return false;
+                if (execErr) {
+                  sdtdbCallback(null, [false, `${diskName}: Could not execute mongooose query.`]);
+                  return;
                 }
 
                 // Report any error on attributes.
-                let attr_res_length = attr_res.length;
-                for (let i = 0; i < attr_res_length; i++) {
-                  if (attr_res[i][0] === false) {
-                    sdtdb_callback(null, [false, disk_name + ': Could not update attriute ' + attr_res[i][1] + '.']);
-                    return false;
+                const attrResLength = attrRes.length;
+                for (let i = 0; i < attrResLength; i++) {
+                  if (attrRes[i][0] === false) {
+                    sdtdbCallback(null, [false, `${diskName}: Could not update attriute ${attrRes[i][1]}.`]);
+                    return;
                   }
                 }
 
                 // Report success.
-                sdtdb_callback(null, [true, null]);
-                return true;
+                sdtdbCallback(null, [true, null]);
               });
           }
         );
       }
     }
   );
-}
+};

@@ -1,84 +1,90 @@
-var async = require('async').mapLimit;
-var winston = require('winston');
-var mongoose = require('./db')(true);
+const exec = require('child_process').exec;
+const async = require('async').mapLimit;
+const winston = require('winston');
+const mongoose = require('./db')(true);
+const SaveData = require('./SaveData');
 
-var SaveData = require('./SaveData');
-
-const log_file_string = () => {
-  let now = new Date();
-  let year = now.getFullYear().toString();
+const logFileString = () => {
+  const now = new Date();
+  const year = now.getFullYear().toString();
   let month = (now.getMonth() + 1).toString();
 
   if (month.length < 2) {
-    month = '0' + month;
+    month = `0${month}`;
   }
 
   return year + month;
 };
 
+const scriptStartTime = (new Date()).getTime();
+
 // Configure winston
 winston.configure({
   transports: [
     new (winston.transports.Console)({
-      timestamp: true
+      timestamp: true,
     }),
     new (winston.transports.File)({
-      filename: 'logs/' + log_file_string() + '.log',
-      timestamp: true
-    })
-  ]
+      filename: `logs/${logFileString()}.log`,
+      timestamp: true,
+    }),
+  ],
 });
 
-
-var script_start_time = (new Date()).getTime();
-
-var disks = [
-  '/dev/sda1',
-  '/dev/sda2',
-  '/dev/sda5'
-];
-
-// During development
-let dev = true;
-if (dev) {
-  disks = [
-    '/dev/sda5'
-  ];
-}
-
-// use map instead and use res to take eventual errors.
-// use promise.then or .catch for saveData to get out of callback hell.
-async(
-  disks,
-  3,
-  (disk, callback) => { SaveData(disk, callback) },
-  (err, res) => {
-    if (err) {
-      winston.warning('An unknown error was returned when reading disks.');
-      return false;
-    }
-
-    mongoose.close();
-
-    let res_length = res.length;
-    let disk_count = [0, 0];
-    for (var i = 0; i < res_length; i++) {
-      if (res[i][0] === false) {
-        disk_count[1]++;
-        winston.warning(res[i][1]);
-        continue;
-      }
-
-      if (res[i][1] !== null) {
-        winston.info(res[i][1]);
-      }
-
-      disk_count[0]++;
-    }
-
-    winston.info(
-      'SCRIPT INFO: ' + disk_count[0] + 'S ' + disk_count[1] + 'F (' + disks.length + 'T). '
-      + 'Runtime ' + ((new Date()).getTime() - script_start_time) + ' ms.'
-    );
+exec('sudo lsblk -l -d -p', (diskErr, execRes) => {
+  if (diskErr) {
+    winston.error(`Terminating: Couldn't read disk names. Runtime ${((new Date()).getTime() - scriptStartTime)} ms.`);
+    return;
   }
-);
+
+  const diskRes = execRes.split('\n');
+
+  const diskResLength = diskRes.length;
+  const disks = [];
+
+  for (let i = 1; i < diskResLength; i++) {
+    if (diskRes[i] === '') {
+      continue;
+    }
+
+    const diskResRow = diskRes[i].match(/\s*(\S*)\s+\d*:\d*\s*\d*\s*[\w.,]*\s*\d*\s*(\w*)\s+.*/);
+
+    if (diskResRow[2] === 'disk') {
+      disks.push(diskResRow[1]);
+    }
+  }
+
+  async(
+    disks,
+    3,
+    (disk, callback) => { SaveData(disk, callback); },
+    (err, res) => {
+      if (err) {
+        winston.warning('An unknown error was returned when reading disks.');
+        return;
+      }
+
+      mongoose.close();
+
+      const resLength = res.length;
+      const diskCount = [0, 0];
+
+      for (let i = 0; i < resLength; i++) {
+        if (res[i][0] === false) {
+          diskCount[1]++;
+          winston.warning(res[i][1]);
+          continue;
+        }
+
+        if (res[i][1] !== null) {
+          winston.info(res[i][1]);
+        }
+
+        diskCount[0]++;
+      }
+
+      const runtime = (new Date()).getTime() - scriptStartTime;
+      winston.info(`SCRIPT INFO: ${diskCount[0]}S ${diskCount[1]}F (${disks.length}T). Runtime ${runtime} ms.`);
+    }
+  );
+});

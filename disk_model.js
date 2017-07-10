@@ -1,44 +1,45 @@
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
+
 mongoose.Promise = global.Promise;
 
-var Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 
-const attr_values = new Schema({
+const attrValues = new Schema({
   time: Number,
   value: Number,
-  raw: String
-}, {_id: false});
+  raw: String,
+}, { _id: false });
 
-const attr_schema = new Schema({
+const attrSchema = new Schema({
   attr_id: Number,
   name: String,
   thresh: Number,
   attr_type: String,
   failed: String,
   updated: String,
-  values: [attr_values]
-}, {_id: false});
+  values: [attrValues],
+}, { _id: false });
 
-const info_schema = new Schema({
+const infoSchema = new Schema({
   name: String,
-  value: String
-}, {_id: false});
+  value: String,
+}, { _id: false });
 
-const disk_schema = new Schema({
+const diskSchema = new Schema({
   'Device Model': String,
   'Serial Number': String,
-  'added': Number,
-  'updated': Number,
-  'location': String,
-  'internal_name': String,
-  info_section: [info_schema],
-  attr_section: [attr_schema]
+  added: Number,
+  updated: Number,
+  location: String,
+  internal_name: String,
+  info_section: [infoSchema],
+  attr_section: [attrSchema],
 });
 
-const disk_model = mongoose.model(
+const diskModel = mongoose.model(
   'Disk',
-  disk_schema,
+  diskSchema,
   'disks'
 );
 
-module.exports = disk_model;
+module.exports = diskModel;

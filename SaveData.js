@@ -1,16 +1,16 @@
-var async = require('async').parallel;
+const async = require('async').parallel;
 
-var RunSections = require('./RunSections');
-var SaveDataToDB = require('./SaveDataToDB');
+const RunSections = require('./RunSections');
+const SaveDataToDB = require('./SaveDataToDB');
 
 module.exports = (disk, callback) => {
-  let current_time = (new Date()).getTime();
+  const currentTime = (new Date()).getTime();
 
   // Get info-sec and attr-sec asyncronically, then save to DB and call callback-function
   async(
     [
-      (run_callback) => { RunSections.Info(run_callback, disk, current_time); },
-      (run_callback) => { RunSections.Attr(run_callback, disk, current_time); }
+      (runCallback) => { RunSections.Info(runCallback, disk, currentTime); },
+      (runCallback) => { RunSections.Attr(runCallback, disk, currentTime); },
     ],
     (err, res) => {
       // Abort if any smartctl couldn't run
@@ -23,4 +23,4 @@ module.exports = (disk, callback) => {
       }
     }
   );
-}
+};

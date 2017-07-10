@@ -1,27 +1,25 @@
-var mongoose = require('mongoose');
-var config = require('./sensitive.json');
+const mongoose = require('mongoose');
+const config = require('./sensitive.json');
 
 
-const db_config = function(in_development = true) {
+const configDb = (inDevelopment = true) => {
   const user = 'rw';
-  const use_development_config = in_development ? 'development' : 'production';
+  const useDevConf = inDevelopment ? 'development' : 'production';
 
-  const db_config = {
-    'uri': 'mongodb://' + config[use_development_config].host +
-      ':' + config[use_development_config].port +
-      '/' + config[use_development_config].database,
-    'opts': {
-      'user': config.users[user].username,
-      'pass': config.users[user].password
-    }
+  const dbConfig = {
+    uri: `mongodb://${config[useDevConf].host}:${config[useDevConf].port}/${config[useDevConf].database}`,
+    opts: {
+      user: config.users[user].username,
+      pass: config.users[user].password,
+    },
   };
 
   mongoose.connect(
-    db_config.uri,
-    db_config.opts
+    dbConfig.uri,
+    dbConfig.opts
   );
 
   return mongoose.connection;
 };
 
-module.exports = db_config;
+module.exports = configDb;
