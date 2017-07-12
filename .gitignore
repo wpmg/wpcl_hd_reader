@@ -1,3 +1,7 @@
-sensitive.json
+# General
 node_modules/
-logs/*.log
+.idea/
+*.log
+
+# App specific
+sensitive.json
