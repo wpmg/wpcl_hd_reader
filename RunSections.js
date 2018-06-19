@@ -2,7 +2,7 @@ const exec = require('child_process').exec;
 
 module.exports.Info = (callback, disk, currentTime) => {
   // Run smartctl for a disk
-  exec(`smartctl -i ${disk}`, (error, stdout) => {
+  exec(`sudo smartctl -i ${disk}`, (error, stdout) => {
     // If error, report down the chain.
     if (error) {
       callback(null, [false, `${disk}: Reading stopped. smartctl -i could not execute: ${error}`]);
@@ -77,7 +77,7 @@ module.exports.Info = (callback, disk, currentTime) => {
 
 module.exports.Attr = (callback, disk, currentTime) => {
   // Run smartctl for a disk
-  exec(`smartctl -A ${disk}`, (error, stdout) => {
+  exec(`sudo smartctl -A ${disk}`, (error, stdout) => {
     // If error, report down the chain
     if (error) {
       callback(null, [false, `${disk}: Reading stopped. smartctl -A could not execute: ${error}`]);

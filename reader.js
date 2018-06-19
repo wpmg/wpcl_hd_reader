@@ -60,7 +60,7 @@ exec('sudo lsblk -l -d -p', (diskErr, execRes) => {
     (disk, callback) => { SaveData(disk, callback); },
     (err, res) => {
       if (err) {
-        winston.warning('An unknown error was returned when reading disks.');
+        winston.warn('An unknown error was returned when reading disks.');
         return;
       }
 
@@ -72,7 +72,7 @@ exec('sudo lsblk -l -d -p', (diskErr, execRes) => {
       for (let i = 0; i < resLength; i++) {
         if (res[i][0] === false) {
           diskCount[1]++;
-          winston.warning(res[i][1]);
+          winston.warn(res[i][1]);
           continue;
         }
 
